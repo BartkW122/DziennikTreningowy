@@ -9,6 +9,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadDataFromDatabase();
+        if(trainingList.isEmpty()) {
+            Toast.makeText(this,"Brak zapisanych treningów. Dodaj pierwszy!",Toast.LENGTH_LONG).show();
+        }
     }
 
     private void loadDataFromDatabase() {
