@@ -1,92 +1,72 @@
 package com.example.dzienniktreningowy;
-import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
-import android.content.ContentValues;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Spinner;
-import android.widget.Toast;
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private EditText editName, editReps,editDuration;
-    private Button buttonSave,buttonDelate;
+    private RecyclerView recyclerView;
+    private TrainingAdapter adapter;
+    private ArrayList<Training> trainingList;
     private TrainingDbHelper dbHelper;
-    private Spinner dificultySpinner;
-
-    private final String[] difficulty  = {"HARD", "MEDIUM", "LOW"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_training);
+        setContentView(R.layout.activity_main); // Upewnij się, że w tym XML jest RecyclerView i Button
 
         dbHelper = new TrainingDbHelper(this);
+        trainingList = new ArrayList<>();
 
-        editName = findViewById(R.id.editExerciseName);
-        editReps = findViewById(R.id.editRepsCount);
-        editDuration = findViewById(R.id.editRepsDuration);
-        dificultySpinner = findViewById(R.id.DificultySpinner);
-        buttonSave = findViewById(R.id.buttonSave);
-        buttonDelate = findViewById(R.id.buttonDelate);
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item,difficulty );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_item);
+        adapter = new TrainingAdapter(trainingList);
+        recyclerView.setAdapter(adapter);
 
-        dificultySpinner.setAdapter(adapter);
-        buttonSave.setOnClickListener(new View.OnClickListener() {
+        Button btnAdd = findViewById(R.id.buttonAddTraining);
+        btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                saveTraining();
+                // Przejście do ekranu dodawania
+                startActivity(new Intent(MainActivity.this, AddTrainingActivity.class));
             }
-        });
-
-        buttonDelate.setOnClickListener(v->{
-            finish();
         });
     }
 
-    private void saveTraining() {
-        String name = editName.getText().toString().trim();
-        String repsString = editReps.getText().toString().trim();
-        String repsDuration = editDuration.getText().toString().trim();
-        String difficultyString = dificultySpinner.getSelectedItem().toString();
-        // Walidacja
-        if (name.isEmpty() || repsString.isEmpty()) {
-            Toast.makeText(this, "Uzupełnij wszystkie pola", Toast.LENGTH_SHORT).show();
-            return;
+    // Wywoływane zawsze, gdy wracamy do tej aktywności
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadDataFromDatabase();
+    }
+
+    private void loadDataFromDatabase() {
+        trainingList.clear(); // Czyścimy listę, żeby nie dublować wpisów
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Pobieramy wszystkie wiersze
+        Cursor cursor = db.query(TrainingDbHelper.TABLE_NAME, null, null, null, null, null, null);
+
+        while (cursor.moveToNext()) {
+            // Odczytujemy dane z kolumn (indeksy kolumn)
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(TrainingDbHelper.COLUMN_NAME));
+            int reps = cursor.getInt(cursor.getColumnIndexOrThrow(TrainingDbHelper.COLUMN_REPS));
+
+            // Dodajemy do listy
+            trainingList.add(new Training(name, reps));
         }
+        cursor.close();
 
-        int reps = Integer.parseInt(repsString);
-        int duration = Integer.parseInt(repsDuration);
-        LocalDate date = LocalDate.now();
-
-        // Zapis do bazy
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(TrainingDbHelper.COLUMN_NAME, name);
-        values.put(TrainingDbHelper.COLUMN_REPS, reps);
-        values.put(TrainingDbHelper.COLUMN_DURATION, duration);
-        values.put(TrainingDbHelper.COLUMN_DATE, String.valueOf(date));
-        values.put(TrainingDbHelper.COLUMN_DIFFICULTY, difficultyString);
-
-        long newRowId = db.insert(TrainingDbHelper.TABLE_NAME, null, values);
-
-        if (newRowId == -1) {
-            Toast.makeText(this, "Błąd zapisu", Toast.LENGTH_SHORT).show();
-        } else if (reps <=0 ) {
-            Toast.makeText(this,"ilosc powtorzen musi byc wieksza od zera!!",Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Trening zapisany", Toast.LENGTH_SHORT).show();
-            finish(); // Zamyka aktywność i wraca do poprzedniej
-        }
+        // Odświeżamy widok
+        adapter.notifyDataSetChanged();
     }
 }
