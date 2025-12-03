@@ -54,7 +54,16 @@ public class MainActivity extends AppCompatActivity {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         // Pobieramy wszystkie wiersze
-        Cursor cursor = db.query(TrainingDbHelper.TABLE_NAME, null, null, null, null, null, null);
+        //Cursor cursor = db.query(TrainingDbHelper.TABLE_NAME, null, null, null, null, null, null);
+        Cursor cursor = db.query(
+                TrainingDbHelper.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                TrainingDbHelper.COLUMN_ID + " DESC"   // TO JEST orderBy
+        );
 
         while (cursor.moveToNext()) {
             // Odczytujemy dane z kolumn (indeksy kolumn)
