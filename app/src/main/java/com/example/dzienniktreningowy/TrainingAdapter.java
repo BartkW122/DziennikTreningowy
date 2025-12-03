@@ -28,7 +28,7 @@ public class TrainingAdapter extends RecyclerView.Adapter<TrainingAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Training training = list.get(position);
         holder.txtName.setText(training.getName());
-        holder.txtReps.setText("Powtórzeń: " + training.getReps());
+        holder.txtReps.setText("ilosc serii: " + training.getReps()+"x");
     }
 
     @Override
